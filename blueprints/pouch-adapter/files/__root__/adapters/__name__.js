@@ -1,9 +1,8 @@
 import { Adapter } from 'ember-pouch';
 import PouchDB from 'pouchdb';
 import config from '<%= dasherizedPackageName %>/config/environment';
-import Ember from 'ember';
-
-const { assert, isEmpty } = Ember;
+import { assert } from '@ember/debug';
+import { isEmpty } from '@ember/utils';
 
 function createDb() {
   let localDb = config.emberPouch.localDb;

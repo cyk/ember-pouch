@@ -1,4 +1,11 @@
-import Ember from 'ember';
+import { assert } from '@ember/debug';
+import { isEmpty } from '@ember/utils';
+import { get } from '@ember/object';
+import { getOwner } from '@ember/application';
+import { bind } from '@ember/runloop';
+import { on } from '@ember/object/evented';
+import { classify, camelize } from '@ember/string';
+import RSVP from 'rsvp';
 import DS from 'ember-data';
 import { pluralize } from 'ember-inflector';
 //import BelongsToRelationship from 'ember-data/-private/system/relationships/state/belongs-to';
@@ -8,18 +15,6 @@ import {
   shouldSaveRelationship,
   configFlagDisabled
 } from '../utils';
-
-const {
-  getOwner,
-  run: {
-    bind
-  },
-  on,
-  String: {
-    camelize,
-    classify
-  }
-} = Ember;
 
 //BelongsToRelationship.reopen({
 //  findRecord() {
@@ -144,7 +139,7 @@ export default DS.RESTAdapter.extend({
   willDestroy: function() {
     this._stopChangesListener();
   },
-  
+
   _indexPromises: [],
 
   _init: function (store, type) {
@@ -154,7 +149,7 @@ export default DS.RESTAdapter.extend({
       throw new Error('Please set the `db` property on the adapter.');
     }
 
-    if (!Ember.get(type, 'attributes').has('rev')) {
+    if (!get(type, 'attributes').has('rev')) {
       var modelName = classify(recordTypeName);
       throw new Error('Please add a `rev` attribute of type `string`' +
         ' on the ' + modelName + ' model.');
@@ -199,7 +194,7 @@ export default DS.RESTAdapter.extend({
         let includeRel = true;
         rel.options = rel.options || {};
         if (typeof(rel.options.async) === "undefined") {
-          rel.options.async = config.emberPouch && !Ember.isEmpty(config.emberPouch.async) ? config.emberPouch.async : true;//default true from https://github.com/emberjs/data/pull/3366
+          rel.options.async = config.emberPouch && !isEmpty(config.emberPouch.async) ? config.emberPouch.async : true;//default true from https://github.com/emberjs/data/pull/3366
         }
         let options = Object.create(rel.options);
         if (rel.kind === 'hasMany' && !shouldSaveRelationship(self, rel)) {
@@ -359,15 +354,15 @@ export default DS.RESTAdapter.extend({
       selector: this._buildSelector(query.filter)
     };
 
-    if (!Ember.isEmpty(query.sort)) {
+    if (!isEmpty(query.sort)) {
       queryParams.sort = this._buildSort(query.sort);
     }
 
-    if (!Ember.isEmpty(query.limit)) {
+    if (!isEmpty(query.limit)) {
       queryParams.limit = query.limit;
     }
 
-    if (!Ember.isEmpty(query.skip)) {
+    if (!isEmpty(query.skip)) {
       queryParams.skip = query.skip;
     }
 
@@ -430,7 +425,7 @@ export default DS.RESTAdapter.extend({
   waitingForConsistency: {},
   _eventuallyConsistent: function(type, id) {
     let pouchID = this.get('db').rel.makeDocID({type, id});
-    let defer = Ember.RSVP.defer();
+    let defer = RSVP.defer();
     this.waitingForConsistency[pouchID] = defer;
 
     return this.get('db').rel.isDeleted(type, id).then(deleted => {
@@ -441,7 +436,7 @@ export default DS.RESTAdapter.extend({
       } else if (deleted === null) {
         return defer.promise;
       } else {
-        Ember.assert('Status should be existing', deleted === false);
+        assert('Status should be existing', deleted === false);
         //TODO: should we reject or resolve the promise? or does JS GC still clean it?
         if (this.waitingForConsistency[pouchID]) {
           delete this.waitingForConsistency[pouchID];
